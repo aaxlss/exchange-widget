@@ -19,7 +19,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "buildTail": "postcss css/tailwind.css -o public/css/style.css"
+    "buildTailPost": "postcss css/tailwind.css -o src/css/style.css",
+    "buildTail": "npx tailwindcss-cli -i css/tailwind.css -o src/css/style.css"
   },
   "eslintConfig": {
     "extends": [

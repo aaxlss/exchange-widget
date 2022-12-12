@@ -109,7 +109,7 @@ function Toolbar() {
       }}>Save</buton>
 
 {/* Table  History*/}
-<table>
+<table class="bg-yellow-500 text-white">
     <thead>
         <th>Data & Time</th>
         <th>Currency From</th>
