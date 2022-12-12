@@ -1,17 +1,22 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { callAPI } from "../API";
 import { assets, history } from "../API/URL";
-
+import { Input } from "../Components/input";
 const CurrencyFrom = ({value, items, setFunction}) => {
   return (
-    <select onChange={item => setFunction(item.target.value)}>
+    <select onChange={item => setFunction(item.target.value)} class="">
         <option value={value} >Select currency</option>
         {items.map(item => (<option value={item.code}>{item.name}</option>))}
        </select>
   );
 };
 
-
+const Amount1 = ({value, onChange}) => {
+  return <Input value={value} onChange={onChange}/>
+}
+const Amount2 = ({value, onChange}) => {
+  return <Input value={value} onChange={onChange}/>
+}
 
 const CurrencyTo = ({value, items, setFunction}) => {
   return (
@@ -97,19 +102,19 @@ function Toolbar() {
     <label>Currency From</label>
     <CurrencyFrom defaultValue={currencyFrom} items={cryptoCollection} setFunction={setCurrencyFrom}/>
     <label>Amount</label>
-    <input value={amountFrom} onChange={event => setAmountFrom(event.target.value)}></input>
+    <Amount1 value={amountFrom} onChange={event => setAmountFrom(event.target.value)}/>
     =
     <label>Currency To</label>
     <CurrencyTo defaultValue={currencyTo} items={currencyCollection} setFunction={setCurrencyTo}/>
     <label>Amount</label>
-    <input value={amountTo} onChange={event => setAmountTo(event.target.value)}></input>
+    <Amount2 value={amountTo} onChange={event => setAmountTo(event.target.value)}/>
     <buton onClick={async () => {
       await onSaveExchange();
       callHistory(setHistoryCollection);
       }}>Save</buton>
 
 {/* Table  History*/}
-<table class="bg-yellow-500 text-white">
+<table class="bg-yellow-500 text-white border-8 border-sky-500">
     <thead>
         <th>Data & Time</th>
         <th>Currency From</th>
