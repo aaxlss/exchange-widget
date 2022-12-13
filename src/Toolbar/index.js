@@ -5,6 +5,11 @@ import { Input } from "../Components/input";
 import { Select } from "../Components/Select";
 import { SmallTitle } from "../Components/SmallTitle";
 import { ButtonConfirm } from "../Components/ButtonConfirm";
+
+//socket configuarion
+import io from 'socket.io-client'
+const socket = io.connect('http://localhost:3001');
+
 const CurrencyFrom = ({ value, items, setFunction, setAssetId }) => {
   return (
     <Select
@@ -68,7 +73,10 @@ const callSaveData = (data) => {
     body: JSON.stringify(data),
     headers: { "Content-type": "application/json;charset=UTF-8" },
   };
-  callAPI(history, options).then((response) => response);
+  callAPI(history, options).then((response) => response)
+  .then(() => {
+    
+  });
 };
 
 const callHistory = (setFunction) => {
@@ -107,6 +115,9 @@ function Toolbar() {
     callCrytoAssets(setCryptoCollection);
     callCurrencyAssets(setCurrencyCollection);
     callHistory(setHistoryCollection);
+    socket.on('exchange added', data => {
+      setHistoryCollection(prev=>[...prev, data])
+    })
   }, []);
 
   useEffect(() => {
