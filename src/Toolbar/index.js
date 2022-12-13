@@ -1,13 +1,17 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { callAPI } from "../API";
-import { assets, history } from "../API/URL";
+import { assets, history, icons } from "../API/URL";
 import { Input } from "../Components/input";
 import { Select } from "../Components/Select";
 import { SmallTitle } from "../Components/SmallTitle";
 import { ButtonConfirm } from "../Components/ButtonConfirm";
-const CurrencyFrom = ({ value, items, setFunction }) => {
+const CurrencyFrom = ({ value, items, setFunction, setAssetId }) => {
   return (
-    <Select onChange={(item) => setFunction(item.target.value)}>
+    <Select
+      onChange={(item) => {
+        setFunction(item.target.value);
+      }}
+    >
       <option value={value}>Select currency</option>
       {items.map((item) => (
         <option value={item.code}>{item.name}</option>
@@ -23,7 +27,7 @@ const Amount2 = ({ value, onChange }) => {
   return <Input value={value} onChange={onChange} />;
 };
 
-const CurrencyTo = ({ value, items, setFunction }) => {
+const CurrencyTo = ({ value, items, setFunction, icons }) => {
   return (
     <Select onChange={(item) => setFunction(item.target.value)}>
       <option value={value}>Select currency</option>
@@ -74,6 +78,13 @@ const callHistory = (setFunction) => {
   callAPI(history, options).then((response) => setFunction(response));
 };
 
+const callIcons = (setFunction) => {
+  const options = {
+    method: "GET",
+  };
+  callAPI(icons, options).then((response) => setFunction(response));
+};
+
 function Toolbar() {
   const [dataSort, setDataSort] = useState({
     date_time: 1,
@@ -86,6 +97,7 @@ function Toolbar() {
   const [cryptoCollection, setCryptoCollection] = useState([]);
   const [currencyCollection, setCurrencyCollection] = useState([]);
   const [historyCollection, setHistoryCollection] = useState([]);
+  const [icons, setIcons] = useState([]);
   const [currencyFrom, setCurrencyFrom] = useState("");
   const [amountFrom, setAmountFrom] = useState(1);
   const [currencyTo, setCurrencyTo] = useState("");
@@ -97,6 +109,9 @@ function Toolbar() {
     callHistory(setHistoryCollection);
   }, []);
 
+  useEffect(() => {
+    callIcons(setIcons);
+  }, [historyCollection]);
   useEffect(() => {}, [currencyFrom, amountFrom, currencyTo, amountTo]);
 
   const onSaveExchange = () => {
@@ -249,6 +264,7 @@ function Toolbar() {
             defaultValue={currencyTo}
             items={currencyCollection}
             setFunction={setCurrencyTo}
+            icons={icons}
           />
         </div>
         <div class="">
@@ -275,7 +291,7 @@ function Toolbar() {
       <div class="w-full flex py-5 px-10">
         <table class="table-auto w-full ">
           <thead class=" bg-neutral-widget">
-            <tr class=" text-left">
+            <tr class=" text-left cursor-pointer">
               <th onClick={() => sortTable("date_time")}>Data & Time</th>
               <th onClick={() => sortTable("currency_from")}>Currency From</th>
               <th onClick={() => sortTable("amount_1")}>Amount 1</th>
@@ -295,9 +311,23 @@ function Toolbar() {
                 return (
                   <tr class={rowClass}>
                     <td>{item.date_time}</td>
-                    <td>{item.currency_from}</td>
+                    <td class="flex flex-row">
+                      <img
+                        class=" w-8 h-8 rounded-full mr-5"
+                        src={icons[item.currency_from]?.url}
+                        alt="icon"
+                      />
+                      {item.currency_from}
+                    </td>
                     <td>{item.amount_1}</td>
-                    <td>{item.currency_to}</td>
+                    <td class="flex flex-row">
+                      <img
+                        class=" w-8 h-8 rounded-full mr-5"
+                        src={icons[item.currency_to]?.url}
+                        alt="icon"
+                      />
+                      {item.currency_to}
+                    </td>
                     <td>{item.amount_2}</td>
                     <td class={typeClass}>{item.type}</td>
                   </tr>
