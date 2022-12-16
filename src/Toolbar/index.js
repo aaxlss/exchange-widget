@@ -7,20 +7,31 @@ import { SmallTitle } from "../Components/SmallTitle";
 import { ButtonConfirm } from "../Components/ButtonConfirm";
 
 //socket configuarion
-import io from 'socket.io-client'
-const socket = io.connect('http://localhost:3001');
+import io from "socket.io-client";
+const socket = io.connect("http://localhost:3001");
 
 const CurrencyFrom = ({ value, items, setFunction, setAssetId }) => {
   return (
     <Select
       onChange={(item) => {
-        setFunction(item.target.value);
+        const itemData = JSON.parse(
+          item.target.options[item.target.options.selectedIndex].getAttribute(
+            "data-item"
+          )
+        );
+        setFunction(itemData);
       }}
     >
       <option value={value}>Select currency</option>
-      {items.map((item) => (
-        <option value={item.code}>{item.name}</option>
-      ))}
+      {items.map((item) => {
+        if (item.price_usd) {
+          return (
+            <option value={item.code} data-item={JSON.stringify(item)}>
+              {item.name}
+            </option>
+          );
+        }
+      })}
     </Select>
   );
 };
@@ -34,10 +45,21 @@ const Amount2 = ({ value, onChange }) => {
 
 const CurrencyTo = ({ value, items, setFunction, icons }) => {
   return (
-    <Select onChange={(item) => setFunction(item.target.value)}>
+    <Select
+      onChange={(item) => {
+        const itemData = JSON.parse(
+          item.target.options[item.target.options.selectedIndex].getAttribute(
+            "data-item"
+          )
+        );
+        setFunction(itemData);
+      }}
+    >
       <option value={value}>Select currency</option>
       {items.map((item) => (
-        <option value={item.code}>{item.name}</option>
+        <option value={item.code} data-item={JSON.stringify(item)}>
+          {item.name}
+        </option>
       ))}
     </Select>
   );
@@ -73,10 +95,7 @@ const callSaveData = (data) => {
     body: JSON.stringify(data),
     headers: { "Content-type": "application/json;charset=UTF-8" },
   };
-  callAPI(history, options).then((response) => response)
-  .then(() => {
-    
-  });
+  callAPI(history, options).then((response) => response);
 };
 
 const callHistory = (setFunction) => {
@@ -109,33 +128,51 @@ function Toolbar() {
   const [currencyFrom, setCurrencyFrom] = useState("");
   const [amountFrom, setAmountFrom] = useState(1);
   const [currencyTo, setCurrencyTo] = useState("");
-  const [amountTo, setAmountTo] = useState(0);
+  const [amountTo, setAmountTo] = useState(1);
+  const [errorCurrency, setErrorCurrency] = useState("");
 
   useEffect(() => {
     callCrytoAssets(setCryptoCollection);
     callCurrencyAssets(setCurrencyCollection);
     callHistory(setHistoryCollection);
-    socket.on('exchange added', data => {
-      setHistoryCollection(prev=>[...prev, data])
-    })
+    socket.on("exchange added", (data) => {
+      setHistoryCollection((prev) => [...prev, data]);
+    });
   }, []);
 
   useEffect(() => {
     callIcons(setIcons);
   }, [historyCollection]);
-  useEffect(() => {}, [currencyFrom, amountFrom, currencyTo, amountTo]);
+
+  useEffect(() => {
+    if (currencyTo != "") {
+      let currentValue =
+        amountFrom * currencyFrom.price_usd * (currencyTo.price_usd || 1);
+      setAmountTo(currentValue);
+    }
+  }, [currencyFrom, amountFrom, currencyTo]);
 
   const onSaveExchange = () => {
-    const data = {
-      date_time: new Date().getTime(),
-      currency_from: currencyFrom,
-      amount_1: amountFrom,
-      currency_to: currencyTo,
-      amount_2: amountTo,
-      type: "Exchange",
-    };
-
-    callSaveData(data);
+    if (currencyFrom != "" && currencyTo != "") {
+      const data = {
+        date_time: new Date().getTime(),
+        currency_from: currencyFrom.name,
+        curreny_from_asset_id: currencyFrom.asset_id,
+        amount_1: amountFrom,
+        currency_to: currencyTo.name,
+        curreny_to_asset_id: currencyTo.asset_id,
+        amount_2: amountTo,
+        type: "Exchange",
+      };
+      console.log(data);
+      callSaveData(data);
+    } else {
+      if (currencyFrom == "") {
+        setErrorCurrency("Select a Currency From");
+      } else if (currencyTo === "") {
+        setErrorCurrency("Select a Currency To");
+      }
+    }
   };
 
   const sortTable = (header) => {
@@ -286,15 +323,10 @@ function Toolbar() {
           />
         </div>
         <div class="relative  ">
-          <ButtonConfirm
-            onClick={async () => {
-              await onSaveExchange();
-              callHistory(setHistoryCollection);
-            }}
-            class={["absolute", "inset-x-0", "bottom-0"]}
-          >
+          <ButtonConfirm onClick={async () => onSaveExchange()}>
             Save
           </ButtonConfirm>
+          {errorCurrency && <p>{errorCurrency}</p>}
         </div>
       </div>
 
@@ -325,7 +357,7 @@ function Toolbar() {
                     <td class="flex flex-row">
                       <img
                         class=" w-8 h-8 rounded-full mr-5"
-                        src={icons[item.currency_from]?.url}
+                        src={icons[item.curreny_from_asset_id]?.url}
                         alt="icon"
                       />
                       {item.currency_from}
@@ -334,7 +366,7 @@ function Toolbar() {
                     <td class="flex flex-row">
                       <img
                         class=" w-8 h-8 rounded-full mr-5"
-                        src={icons[item.currency_to]?.url}
+                        src={icons[item.curreny_to_asset_id]?.url}
                         alt="icon"
                       />
                       {item.currency_to}
