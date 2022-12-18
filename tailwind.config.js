@@ -1,6 +1,9 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   theme: {
+    rotate:{
+      '135': '135deg',
+    },
     colors: {
       'blue': '#1fb6ff',
       'purple': '#7e5bef',

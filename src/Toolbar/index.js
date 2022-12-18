@@ -1,13 +1,14 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useState, useMemo } from "react";
 import { callAPI } from "../API";
 import { assets, history, icons } from "../API/URL";
 import { Input } from "../Components/input";
 import { Select } from "../Components/Select";
 import { SmallTitle } from "../Components/SmallTitle";
 import { ButtonConfirm } from "../Components/ButtonConfirm";
-
+import { Pagination } from "../Pagination";
 //socket configuarion
 import io from "socket.io-client";
+import { Table } from "../Components/Table";
 const socket = io.connect("http://localhost:3001");
 
 const CurrencyFrom = ({ value, items, setFunction, setAssetId }) => {
@@ -130,6 +131,15 @@ function Toolbar() {
   const [currencyTo, setCurrencyTo] = useState("");
   const [amountTo, setAmountTo] = useState(1);
   const [errorCurrency, setErrorCurrency] = useState("");
+  const [limitItems, setLimitItems] = useState(10);
+
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const currentTableData = useMemo(() => {
+    const firstPageIndex = (currentPage - 1) * limitItems;
+    const lastPageIndex = firstPageIndex + limitItems;
+    return historyCollection.slice(firstPageIndex, lastPageIndex);
+  }, [currentPage]);
 
   useEffect(() => {
     callCrytoAssets(setCryptoCollection);
@@ -152,6 +162,18 @@ function Toolbar() {
     }
   }, [currencyFrom, amountFrom, currencyTo]);
 
+  useEffect(() => {
+    createPagination();
+  }, [historyCollection]);
+
+  const createPagination = () => {
+    const pagesNumber = Math.ceil(historyCollection.length / limitItems);
+    let pages = [];
+    for (let index = 1; index <= pagesNumber; index++) {
+      pages.push(index);
+    }
+    console.log(pages);
+  };
   const onSaveExchange = () => {
     if (currencyFrom != "" && currencyTo != "") {
       const data = {
@@ -289,63 +311,67 @@ function Toolbar() {
 
   return (
     <Fragment>
-      <div class="grid grid-cols-6 px-5">
-        <div>
-          <SmallTitle>Currency From</SmallTitle>
-          <CurrencyFrom
-            defaultValue={currencyFrom}
-            items={cryptoCollection}
-            setFunction={setCurrencyFrom}
-          />
+      <div class="px-10">
+        <div class="grid grid-cols-6">
+          <div>
+            <SmallTitle>Currency From</SmallTitle>
+            <CurrencyFrom
+              defaultValue={currencyFrom}
+              items={cryptoCollection}
+              setFunction={setCurrencyFrom}
+            />
+          </div>
+          <div class="">
+            <SmallTitle>Amount</SmallTitle>
+            <Amount1
+              value={amountFrom}
+              onChange={(event) => setAmountFrom(event.target.value)}
+            />
+          </div>
+          <div class=" leading-none relative ">
+            <span class="inline-block align-middle">=</span>
+          </div>
+          <div class="">
+            <SmallTitle>Currency To</SmallTitle>
+            <CurrencyTo
+              defaultValue={currencyTo}
+              items={currencyCollection}
+              setFunction={setCurrencyTo}
+              icons={icons}
+            />
+          </div>
+          <div class="">
+            <SmallTitle>Amount</SmallTitle>
+            <Amount2
+              value={amountTo}
+              onChange={(event) => setAmountTo(event.target.value)}
+            />
+          </div>
+          <div class="leading-none flex align-middle items-center">
+            <ButtonConfirm onClick={async () => onSaveExchange()}>
+              Save
+            </ButtonConfirm>
+            {errorCurrency && <p>{errorCurrency}</p>}
+          </div>
         </div>
-        <div class="">
-          <SmallTitle>Amount</SmallTitle>
-          <Amount1
-            value={amountFrom}
-            onChange={(event) => setAmountFrom(event.target.value)}
-          />
-        </div>
-        <div class="">=</div>
-        <div class="">
-          <SmallTitle>Currency To</SmallTitle>
-          <CurrencyTo
-            defaultValue={currencyTo}
-            items={currencyCollection}
-            setFunction={setCurrencyTo}
-            icons={icons}
-          />
-        </div>
-        <div class="">
-          <SmallTitle>Amount</SmallTitle>
-          <Amount2
-            value={amountTo}
-            onChange={(event) => setAmountTo(event.target.value)}
-          />
-        </div>
-        <div class="relative  ">
-          <ButtonConfirm onClick={async () => onSaveExchange()}>
-            Save
-          </ButtonConfirm>
-          {errorCurrency && <p>{errorCurrency}</p>}
-        </div>
-      </div>
 
-      {/* Table  History*/}
-      <div class="w-full flex py-5 px-10">
-        <table class="table-auto w-full ">
-          <thead class=" bg-neutral-widget">
-            <tr class=" text-left cursor-pointer">
-              <th onClick={() => sortTable("date_time")}>Data & Time</th>
-              <th onClick={() => sortTable("currency_from")}>Currency From</th>
-              <th onClick={() => sortTable("amount_1")}>Amount 1</th>
-              <th onClick={() => sortTable("currency_to")}>Currency To</th>
-              <th onClick={() => sortTable("amount_2")}>Amount 2</th>
-              <th onClick={() => sortTable("type")}>Type</th>
-            </tr>
-          </thead>
-          <tbody>
-            {historyCollection &&
-              historyCollection.map((item, index) => {
+        {/* Table  History*/}
+        <div>
+          <Table>
+            <thead class=" bg-neutral-widget">
+              <tr class=" text-left cursor-pointer">
+                <th onClick={() => sortTable("date_time")}>Data & Time</th>
+                <th onClick={() => sortTable("currency_from")}>
+                  Currency From
+                </th>
+                <th onClick={() => sortTable("amount_1")}>Amount 1</th>
+                <th onClick={() => sortTable("currency_to")}>Currency To</th>
+                <th onClick={() => sortTable("amount_2")}>Amount 2</th>
+                <th onClick={() => sortTable("type")}>Type</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentTableData.map((item, index) => {
                 const rowClass = index % 2 != 0 ? "bg-neutral-widget" : "";
                 const typeClass =
                   item.type == "Exchange"
@@ -376,8 +402,16 @@ function Toolbar() {
                   </tr>
                 );
               })}
-          </tbody>
-        </table>
+            </tbody>
+          </Table>
+
+          <Pagination
+            currentPage={currentPage}
+            totalCount={historyCollection.length}
+            pageSize={limitItems}
+            onPageChange={(page) => setCurrentPage(page)}
+          />
+        </div>
       </div>
     </Fragment>
   );
